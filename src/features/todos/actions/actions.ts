@@ -2,6 +2,7 @@
 
 import { dalFormatErrorMessage, dalLoginRedirect } from "@/dal/helpers"
 import { insertTodo, updateTodo } from "@/features/todos/dal-advanced/mutations"
+import { dal } from "@/dal/pipe"
 
 export async function addTodoAction(formData: FormData) {
   const title = formData.get("title") as string
@@ -15,27 +16,21 @@ export async function addTodoAction(formData: FormData) {
 
   const dueDate = dueDateString ? new Date(dueDateString) : null
 
-  const res = dalLoginRedirect(
-    await insertTodo({
-      title: title.trim(),
-      description: description?.trim() || null,
-      priority,
-      dueDate,
-      completed: false,
-    })
-  )
-
-  if (res.success) return
-  return dalFormatErrorMessage(res.error)
+  return dal(insertTodo({
+    title: title.trim(),
+    description: description?.trim() || null,
+    priority,
+    dueDate,
+    completed: false,
+  }))
+    .after(dalLoginRedirect)
+    .$actionResponse(dalFormatErrorMessage)
 }
 
 export async function toggleTodoAction(todoId: number, completed: boolean) {
-  const res = dalLoginRedirect(
-    await updateTodo(todoId, {
-      completed,
-    })
-  )
-
-  if (res.success) return
-  return dalFormatErrorMessage(res.error)
+  return dal(updateTodo(todoId, {
+    completed,
+  }))
+    .after(dalLoginRedirect)
+    .$actionResponse(dalFormatErrorMessage)
 }

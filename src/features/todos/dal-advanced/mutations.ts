@@ -3,12 +3,13 @@ import { ThrowableDalError } from "@/dal/types"
 import { db, TodoTable } from "@/db"
 import { and, eq } from "drizzle-orm"
 import { revalidateTag } from "next/cache"
+import { dal } from "@/dal/pipe"
 
 export function insertTodo(
   todo: Omit<typeof TodoTable.$inferInsert, "userId">,
 ) {
-  return dalRequireAuth(user =>
-    dalDbOperation(async () => {
+  return dal(dalRequireAuth())
+    .pipe(user => dalDbOperation(async () => {
       const [newTodo] = await db
         .insert(TodoTable)
         .values({ ...todo, userId: user.id })
@@ -18,16 +19,16 @@ export function insertTodo(
       revalidateTag("todos")
 
       return newTodo
-    }),
-  )
+    }))
+    .$execute()
 }
 
 export function updateTodo(
   id: number,
   todo: Partial<Omit<typeof TodoTable.$inferInsert, "userId">>,
 ) {
-  return dalRequireAuth(user =>
-    dalDbOperation(async () => {
+  return dal(dalRequireAuth())
+    .pipe(user => dalDbOperation(async () => {
       const { changes } = await db
         .update(TodoTable)
         .set(todo)
@@ -39,6 +40,6 @@ export function updateTodo(
       revalidateTag("todos")
 
       return { id }
-    }),
-  )
+    }))
+    .$execute()
 }
